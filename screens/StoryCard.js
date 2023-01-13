@@ -2,10 +2,11 @@ import React, { Component } from "react";
 import {View, Text, StyleSheet, SafeAreaView,
         Platform, StatusBar, Image, Dimensions,
         TouchableOpacity} from "react-native";
-
+        
 import Ionicons from "react-native-vector-icons/Ionicons";
 import * as Font from "expo-font";
 import * as SplashScreen from 'expo-splash-screen';
+import firebase from "firebase";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -17,7 +18,10 @@ export default class StoryCard extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      fontsLoaded: false
+      fontsLoaded: false,
+      light_theme: true,
+      story_id: this.props.story.key,
+      story_data: this.props.story.value,
     };
   }
 
@@ -28,21 +32,41 @@ export default class StoryCard extends Component {
 
   componentDidMount() {
     this._loadFontsAsync();
+    this.fetchUser();
   }
 
+  fetchUser = () => {
+    let theme;
+    firebase
+      .database()
+      .ref("/users/" + firebase.auth().currentUser.uid)
+      .on("value", snapshot => {
+        theme = snapshot.val().current_theme;
+        this.setState({ light_theme: theme === "light" });
+      });
+  };
+
   //render do arquivo StoryCard
-render() {
+  render() {
+    var story = this.state.story_data;
     if (!this.state.fontsLoaded) {
       SplashScreen.hideAsync();
     } else {
-     return (
+        let images = {
+        image_1: require("../assets/story_image_1.png"),
+        image_2: require("../assets/story_image_2.png"),
+        image_3: require("../assets/story_image_3.png"),
+        image_4: require("../assets/story_image_4.png"),
+        image_5: require("../assets/story_image_5.png")
+      }
+      return (
         <TouchableOpacity style={styles.container}
                           onPress={()=>this.props.navigation.navigate(
-                            "Tela de Histórias", {story: this.props.story}
+                            "Tela de Histórias", {story: this.state.story_data}
                           )}>
           <SafeAreaView style={styles.droidSafeArea}/>
-            <View style={styles.cardContainer}>
-                <Image source={require("../assets/story_image_1.png")}
+            <View style={this.state.light_theme ? styles.cardContainerLight : styles.cardContainer}>
+              <Image source={images[story.preview_image]}
                        style={{
                         resizeMode:"contain",
                         width: Dimensions.get("window").width-45,
@@ -52,33 +76,33 @@ render() {
               <View style={styles.titleContainer}>
                 <View style={styles.titleTextContainer}>
                   <View style={styles.storyTitle}>
-                    <Text style={styles.storyTitleText}>
-                    {this.props.story.title}
+                    <Text style={this.state.light_theme ? styles.storyTitleTextLight : styles.storyTitleText}>
+                    {story.title}
                     </Text>
                   </View>
                   <View style={styles.storyAuthor}>
-                    <Text style={styles.storyAuthorText}>
-                      {this.props.story.author}
+                    <Text style={this.state.light_theme ? styles.storyAuthorTextLight : styles.storyAuthorText}>
+                      {story.author}
                     </Text>
                   </View>
                 </View>
               </View>
-                <Text style={styles.descriptionText}>
-                {this.props.story.description}
+                <Text style={this.state.light_theme ? styles.descriptionTextLight : styles.descriptionText}>
+                  {story.description}
                 </Text>
               <View style={styles.actionContainer}>
                 <View style={styles.likeButton}>
                   <View style={styles.likeIcon}>
                     <Ionicons name={"heart"}
                               size={30}
-                              color={"white"}
+                              color={this.state.light_theme ? "#2f345d" : "white"}
                               style={{width: 30,
                                       marginLeft: 20,
                                       marginTop: 5}}
                     />
                     </View>
                     <View>
-                      <Text style={styles.likeText}>12k</Text>
+                      <Text style={this.state.light_theme ? styles.likeTextLight : styles.likeText}>12k</Text>
                     </View>
                   </View>
                 </View>
@@ -102,6 +126,12 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 10
   },
+  cardContainerLight: {
+    margin: 13,
+    backgroundColor: "#f2f2f2",
+    borderRadius: 20,
+    padding: 10
+  },
   titleTextContainer: {
     flex: 1
   },
@@ -114,15 +144,31 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: "white"
   },
+  storyTitleTextLight: {
+    fontFamily: "Bubblegum-Sans",
+    fontSize: 20,
+    color: "#2f345d"
+  },
   storyAuthorText: {
     fontFamily: "Bubblegum-Sans",
     fontSize: 18,
     color: "white"
   },
+  storyAuthorTextLight: {
+    fontFamily: "Bubblegum-Sans",
+    fontSize: 18,
+    color: "#2f345d"
+  },
   descriptionText: {
     fontFamily: "Bubblegum-Sans",
     fontSize: 13,
     color: "white",
+    padding: 10,
+  },
+  descriptionTextLight: {
+    fontFamily: "Bubblegum-Sans",
+    fontSize: 13,
+    color: "#2f345d",
     padding: 10,
   },
   actionContainer: {
@@ -141,6 +187,13 @@ const styles = StyleSheet.create({
   },
   likeText: {
     color: "white",
+    fontFamily: "Bubblegum-Sans",
+    fontSize: 25,
+    marginLeft: 5,
+    marginTop: 6,
+  },
+  likeTextLight: {
+    color: "#f2f2f2",
     fontFamily: "Bubblegum-Sans",
     fontSize: 25,
     marginLeft: 5,
